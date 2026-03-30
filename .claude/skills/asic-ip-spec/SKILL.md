@@ -1,7 +1,8 @@
 ---
 name: asic-ip-spec
 description: >
-  Generate a complete, professional ASIC IP specification document in Markdown.
+  Generate a complete, professional ASIC IP specification document in Markdown,
+  modelled on STMicroelectronics TRM structure (RM0090 style).
   Use when the user wants to write, define, or generate an IP spec, hardware block spec,
   RTL spec, or IP documentation for an ASIC or SoC design.
   Triggers on: "write an IP spec", "generate IP spec", "ASIC spec", "hardware spec",
@@ -11,380 +12,539 @@ description: >
 # ASIC IP Spec Generator
 
 Guide the user through gathering all required information for a hardware IP block, then
-produce a complete, well-structured IP specification document in Markdown following
-industry-standard hardware documentation practices.
+produce a complete, well-structured IP specification document in Markdown.
+
+Document structure is modelled on STMicroelectronics technical reference manuals
+(e.g. RM0090 for STM32F4xx) — the industry reference for IP peripheral documentation.
+
+## ST TRM Chapter Pattern (reference)
+
+Every ST peripheral chapter follows this consistent structure:
+
+```
+X.1  Introduction          — what the IP is, which SoC variants include it
+X.2  Main features         — bullet list of capabilities
+X.3  Functional description — subdivided by operating mode / sub-block
+X.4  Interrupts            — sources, flags, enable bits (DEDICATED section)
+X.5  Low-power modes       — IP behavior in Sleep / Stop / Standby
+X.6  Register description  — one subsection per register + register map table
+```
+
+This skill generates a spec following this proven structure.
+
+---
 
 ## Workflow
 
 Make a todo list and work through each step one at a time.
 
-### 1. Gather IP Overview Information
+### 1. Gather IP Information
 
-Use AskUserQuestion to collect the following if not already provided. Ask in groups — don't fire one question at a time for all of these; batch related questions together.
+Use AskUserQuestion to collect the following. Batch related questions — don't ask one at a time.
 
-**Batch 1 — Identity & Purpose:**
+**Batch 1 — Identity:**
 - IP block name (e.g. `uart_ctrl`, `dma_engine`, `axi_bridge`)
 - One-line functional description
-- Target process node / technology (e.g. TSMC 7nm, GF 22nm, generic)
-- Intended SoC or chip name (optional)
-- Document version and author
+- Which SoC / chip variants include this IP (e.g. "all variants", "only high-end SKU")
+- Target process node (e.g. TSMC 7nm, GF 22nm, generic)
+- Document version, author, date
 
 **Batch 2 — Architecture:**
-- Key features (bullet list from user)
-- Block diagram description or ASCII art (ask user to describe or paste)
-- Top-level interfaces (bus protocols: AXI, APB, AHB, custom; data interfaces; interrupts)
-- Number of clock domains
-- Number of reset domains
+- Key features (user provides bullet list)
+- Top-level interfaces: bus protocol (AXI4, APB3, AHB, custom), data I/O, clocks, resets
+- Number of clock domains and reset domains
+- Block diagram (ask user to describe or provide ASCII)
 
-**Batch 3 — Details:**
-- Register count / address space size
-- Power domains / voltage rails
-- Any known timing constraints or frequency targets
-- Verification intent (UVM, formal, lint, CDC)
+**Batch 3 — Functional Modes:**
+- What are the main operating modes? (e.g. TX mode, RX mode, loopback, DMA mode)
+- Any special sub-modes (burst, FIFO, synchronous/asynchronous, half-duplex)?
+- Baud rate / frequency generation mechanism (if applicable)
+- Hardware flow control (if applicable)
 
-If the user says "just generate it" or provides a high-level description only, make reasonable
-industry-standard assumptions and clearly mark them as `> **Assumption:**` in the document.
+**Batch 4 — Interrupts & Power:**
+- Interrupt sources (list each condition that generates an interrupt)
+- Are interrupts level or edge? Active high or low?
+- Low-power mode behavior: what happens in Sleep / Stop / Standby?
+- Can this IP wake the system from a low-power mode?
 
-### 2. Generate the Spec Document
+**Batch 5 — Registers:**
+- Number of registers and address space size
+- List of register names (user can provide rough list; Claude will structure them)
 
-Write the complete Markdown spec using the template below. Fill every section with real
-content based on user input. For sections where details weren't provided, add a clearly
-marked placeholder: `> _TODO: [what is needed here]_`
-
-Use the Write tool to create the file at:
-`./docs/<ip-name>/<ip-name>_spec.md`
-(create the directory if it doesn't exist)
+If user says "just generate it", use reasonable defaults and mark assumptions clearly as:
+`> **Assumption:** ...`
 
 ---
 
-## Spec Document Template
+### 2. Generate the Spec Document
 
-```markdown
+Write the full Markdown document using the template below. Save to:
+`./docs/<ip-name>/<ip-name>_spec.md`
+
+For sections where data is missing, add: `> _TODO: [what is needed]_`
+
+---
+
+## Document Template
+
+````markdown
 # <IP_NAME> IP Specification
 
-| Field        | Value                        |
-|--------------|------------------------------|
-| Document     | <IP_NAME> IP Specification   |
-| Version      | 0.1                          |
-| Status       | Draft                        |
-| Author       | <author>                     |
-| Date         | <YYYY-MM-DD>                 |
-| Target       | <process node / SoC>         |
+| Field        | Value                          |
+|--------------|-------------------------------|
+| Document     | <IP_NAME> IP Specification    |
+| Version      | 0.1                           |
+| Status       | Draft                         |
+| Author       | <author>                      |
+| Date         | <YYYY-MM-DD>                  |
+| Applies to   | <SoC name / all variants>     |
+| Target node  | <process node>                |
 
 ---
 
 ## Table of Contents
 
-1. [Overview](#1-overview)
-2. [Features](#2-features)
-3. [Block Diagram](#3-block-diagram)
-4. [Interface Description](#4-interface-description)
-5. [Register Map](#5-register-map)
-6. [Functional Description](#6-functional-description)
-7. [Clocking](#7-clocking)
-8. [Reset](#8-reset)
-9. [Timing Requirements](#9-timing-requirements)
-10. [Power Domains](#10-power-domains)
-11. [Interrupts and Events](#11-interrupts-and-events)
-12. [Verification Plan](#12-verification-plan)
-13. [Known Limitations](#13-known-limitations)
-14. [Revision History](#14-revision-history)
+1. [Introduction](#1-introduction)
+2. [Main Features](#2-main-features)
+3. [Functional Description](#3-functional-description)
+4. [Interrupts](#4-interrupts)
+5. [Low-Power Modes](#5-low-power-modes)
+6. [Register Description](#6-register-description)
+7. [Interface Description](#7-interface-description)
+8. [Clocking](#8-clocking)
+9. [Reset](#9-reset)
+10. [Timing Requirements](#10-timing-requirements)
+11. [Verification Plan](#11-verification-plan)
+12. [Known Limitations](#12-known-limitations)
+13. [Revision History](#13-revision-history)
 
 ---
 
-## 1. Overview
+## 1. Introduction
 
-<2–4 sentence description of what this IP does, why it exists, and where it fits in the SoC.>
+<2–4 sentences: what this IP does, its role in the SoC, and which device variants include it.>
 
----
-
-## 2. Features
-
-- Feature 1
-- Feature 2
-- Feature 3
+The <IP_NAME> is available on: <list variants, e.g. "all SKUs" or "high-performance variant only">.
 
 ---
 
-## 3. Block Diagram
+## 2. Main Features
+
+- <Feature 1, e.g. "Full-duplex asynchronous communication">
+- <Feature 2, e.g. "Programmable baud rate up to X Mbps">
+- <Feature 3, e.g. "Hardware flow control (CTS/RTS)">
+- <Feature 4, e.g. "DMA-capable TX and RX channels">
+- <Feature 5, e.g. "FIFO depth: 16 entries × 32-bit">
+- <Feature 6, e.g. "Multiprocessor communication support">
+- <Feature 7, e.g. "Single-wire half-duplex mode">
+- <Feature 8, e.g. "Wakeup from Stop mode via received character">
+
+---
+
+## 3. Functional Description
+
+### 3.1 Block Diagram
 
 ```
-                    ┌─────────────────────────────┐
-                    │         <IP_NAME>            │
-  APB Bus  ─────►  │  ┌─────────────┐             │
-                    │  │  Reg File   │             │
-  CLK      ─────►  │  └──────┬──────┘             │
-  RSTn     ─────►  │         │                    │  ──►  <output>
-                    │  ┌──────▼──────┐             │
-                    │  │  Datapath   │             │
-                    │  └─────────────┘             │
-                    └─────────────────────────────┘
+                  ┌──────────────────────────────────────────┐
+                  │               <IP_NAME>                  │
+                  │                                          │
+  APB/AXI  ──►   │  ┌──────────┐    ┌──────────────────┐   │
+                  │  │ Reg File │───►│    Datapath /     │   │──► TX_DATA
+  CLK      ──►   │  └──────────┘    │    State Machine  │   │
+  RSTn     ──►   │                  └──────────┬────────┘   │◄── RX_DATA
+                  │  ┌──────────┐              │            │
+                  │  │ Int Ctrl │◄─────────────┘            │──► IRQ
+                  │  └──────────┘                           │
+                  └──────────────────────────────────────────┘
 ```
 
-> _TODO: Replace with actual block diagram or more detailed ASCII art._
+> _TODO: Replace with actual block diagram._
 
----
+### 3.2 <Operating Mode 1, e.g. Transmitter>
 
-## 4. Interface Description
+<Describe the transmit path, data flow, enabling sequence, and relevant signals.>
 
-### 4.1 Port List
+**Enabling sequence:**
+1. Configure word length, baud rate, parity in control registers
+2. Set ENABLE bit in CTRL register
+3. Write data to TX_DATA register
+4. Poll/interrupt on TX_EMPTY flag
 
-| Port Name     | Direction | Width | Clock Domain | Description                        |
-|---------------|-----------|-------|--------------|------------------------------------|
-| `clk`         | input     | 1     | —            | Primary clock                      |
-| `rst_n`       | input     | 1     | —            | Active-low synchronous reset       |
-| `apb_psel`    | input     | 1     | clk          | APB select                         |
-| `apb_penable` | input     | 1     | clk          | APB enable                         |
-| `apb_pwrite`  | input     | 1     | clk          | APB write strobe                   |
-| `apb_paddr`   | input     | 12    | clk          | APB address                        |
-| `apb_pwdata`  | input     | 32    | clk          | APB write data                     |
-| `apb_prdata`  | output    | 32    | clk          | APB read data                      |
-| `apb_pready`  | output    | 1     | clk          | APB ready                          |
-| `apb_pslverr` | output    | 1     | clk          | APB error response                 |
-| `irq`         | output    | 1     | clk          | Interrupt request (level, active-high) |
-
-> _TODO: Add all IP-specific ports._
-
-### 4.2 Interface Protocols
-
-| Interface | Protocol | Version | Notes              |
-|-----------|---------|---------|--------------------|
-| Register  | APB3    | v2.0    | 32-bit data width  |
-
----
-
-## 5. Register Map
-
-### 5.1 Address Map Summary
-
-Base address: `0x0000_0000` (relative to IP base)
-
-| Offset | Register Name | Access | Reset Value  | Description               |
-|--------|---------------|--------|--------------|---------------------------|
-| `0x00` | `CTRL`        | RW     | `0x0000_0000`| Control register          |
-| `0x04` | `STATUS`      | RO     | `0x0000_0000`| Status register           |
-| `0x08` | `INT_EN`      | RW     | `0x0000_0000`| Interrupt enable          |
-| `0x0C` | `INT_STAT`    | RW1C   | `0x0000_0000`| Interrupt status (W1C)    |
-
-### 5.2 Register Descriptions
-
-#### CTRL — Control Register (Offset `0x00`, RW, Reset: `0x0000_0000`)
-
-| Bits  | Field Name  | Access | Reset | Description                          |
-|-------|-------------|--------|-------|--------------------------------------|
-| 31:8  | RESERVED    | —      | 0     | Reserved, write 0                    |
-| 7:4   | MODE        | RW     | 0x0   | Operating mode select                |
-| 3     | FLUSH       | WO     | 0     | Write 1 to flush (self-clearing)     |
-| 2     | LOOPBACK    | RW     | 0     | 1 = loopback enable                  |
-| 1     | IRQ_EN      | RW     | 0     | 1 = global interrupt enable          |
-| 0     | ENABLE      | RW     | 0     | 1 = IP enable                        |
-
-#### STATUS — Status Register (Offset `0x04`, RO, Reset: `0x0000_0000`)
-
-| Bits  | Field Name  | Access | Reset | Description                          |
-|-------|-------------|--------|-------|--------------------------------------|
-| 31:2  | RESERVED    | —      | 0     | Reserved                             |
-| 1     | BUSY        | RO     | 0     | 1 = IP is busy                       |
-| 0     | READY       | RO     | 0     | 1 = IP ready for operation           |
-
-> _TODO: Add remaining registers._
-
----
-
-## 6. Functional Description
-
-### 6.1 Operating Modes
-
-<Describe each operating mode. What the IP does in each mode, how to configure it.>
-
-### 6.2 Data Flow
-
-<Describe the data path from input to output. Include pipeline stages if applicable.>
-
-### 6.3 Control Flow / State Machine
-
-<Describe the main FSM or control flow. If there is a state machine, describe all states
-and transitions. An ASCII state diagram is encouraged.>
-
+**Timing diagram (conceptual):**
 ```
-IDLE ──[ENABLE=1]──► ACTIVE ──[done]──► IDLE
-                      │
-                      └──[error]──► ERROR ──[FLUSH]──► IDLE
+CLK   ___/‾\_/‾\_/‾\_/‾\_/‾\_/‾\_/‾\_/‾\
+TX    ‾‾‾\___[D0][D1][D2][D3][D4][D5][D6][D7]‾‾‾
 ```
 
-### 6.4 Interrupt Generation
+### 3.3 <Operating Mode 2, e.g. Receiver>
 
-| Interrupt Source    | Trigger Condition        | Enable Bit    | Status Bit    |
-|---------------------|--------------------------|---------------|---------------|
-| Operation Complete  | Data transfer done       | INT_EN[0]     | INT_STAT[0]   |
-| Error               | Protocol/parity error    | INT_EN[1]     | INT_STAT[1]   |
+<Describe the receive path.>
 
----
+### 3.4 <Baud Rate / Clock Divider Generation>
 
-## 7. Clocking
+The baud rate is derived from the peripheral clock (PCLK) using:
 
-| Clock Name | Frequency      | Source        | Description                        |
-|------------|---------------|---------------|------------------------------------|
-| `clk`      | up to 500 MHz  | External PLL  | Primary functional clock           |
-
-### 7.1 Clock Domain Crossings (CDC)
-
-| From Domain | To Domain | Signal(s)        | Synchronizer Type  |
-|-------------|-----------|------------------|--------------------|
-| clk         | clk2      | `data_valid`     | 2FF synchronizer   |
-
-> _TODO: List all CDCs or state "single clock domain — no CDCs"._
-
----
-
-## 8. Reset
-
-| Reset Signal | Polarity    | Type         | Scope               |
-|--------------|-------------|--------------|---------------------|
-| `rst_n`      | Active low  | Synchronous  | Full IP             |
-
-### 8.1 Reset Behavior
-
-- All registers return to their reset values listed in Section 5.
-- All FIFOs are flushed.
-- All output signals are driven to their inactive state.
-- Reset must be asserted for a minimum of **2 clock cycles**.
-
----
-
-## 9. Timing Requirements
-
-| Parameter           | Min  | Typ  | Max  | Unit | Condition            |
-|--------------------|------|------|------|------|----------------------|
-| Clock period        | 2.0  | —    | —    | ns   | 500 MHz max          |
-| Input setup time    | 0.2  | —    | —    | ns   | Relative to clk rise |
-| Input hold time     | 0.1  | —    | —    | ns   | Relative to clk rise |
-| Output valid delay  | —    | —    | 1.5  | ns   | Relative to clk rise |
-
-> _TODO: Populate with actual STA/timing constraints._
-
----
-
-## 10. Power Domains
-
-| Domain Name | Voltage    | Always-On | Retention | Description           |
-|-------------|-----------|-----------|-----------|----------------------|
-| `VDD_CORE`  | 0.8V       | Yes       | No        | Primary logic domain |
-
-### 10.1 Power Consumption Estimates
-
-| Mode      | Dynamic Power | Leakage  | Notes                  |
-|-----------|--------------|----------|------------------------|
-| Active    | TBD mW       | TBD μW   | At nominal freq/voltage|
-| Idle      | TBD mW       | TBD μW   | ENABLE=0               |
-
----
-
-## 11. Interrupts and Events
-
-| IRQ # | Name             | Type        | Description                      |
-|-------|------------------|-------------|----------------------------------|
-| 0     | OP_COMPLETE      | Level       | Operation completed successfully |
-| 1     | ERROR            | Level       | Error detected                   |
-
-All interrupts are cleared by writing 1 to the corresponding bit in `INT_STAT` (W1C).
-
----
-
-## 12. Verification Plan
-
-### 12.1 Testbench Architecture
-
-| Component         | Type        | Description                              |
-|-------------------|-------------|------------------------------------------|
-| APB VIP           | UVM Agent   | Drives APB transactions                  |
-| Reference Model   | SystemVerilog | Golden model for output checking       |
-| Scoreboard        | UVM         | Compares DUT output vs reference         |
-| Coverage Collector| UVM         | Functional coverage collection           |
-
-### 12.2 Test Cases
-
-| Test Name             | Category    | Description                                |
-|-----------------------|-------------|---------------------------------------------|
-| `tc_reset`            | Basic       | Reset behavior verification                |
-| `tc_reg_access`       | Register    | Read/write all registers, reset values     |
-| `tc_basic_op`         | Functional  | Basic operation in default mode            |
-| `tc_all_modes`        | Functional  | Exercise all operating modes               |
-| `tc_interrupt`        | Interrupt   | All interrupt sources, enable/disable      |
-| `tc_error_injection`  | Error       | Protocol errors, illegal accesses         |
-| `tc_backpressure`     | Stress      | Backpressure and flow control              |
-| `tc_reset_mid_op`     | Corner      | Reset asserted during active operation     |
-
-### 12.3 Coverage Goals
-
-| Coverage Type        | Target  |
-|----------------------|---------|
-| Code coverage        | 100%    |
-| FSM state coverage   | 100%    |
-| FSM transition coverage | 100% |
-| Functional coverage  | 95%     |
-| Register field toggle| 100%    |
-
-### 12.4 Formal and Lint
-
-- [ ] Lint: Spyglass or equivalent — zero errors, zero warnings
-- [ ] CDC: Synopsys SpyGlass CDC or Mentor 0-In — clean
-- [ ] Formal: Property checking on reset behavior and key protocols
-
----
-
-## 13. Known Limitations
-
-| ID   | Description                                     | Workaround                  |
-|------|-------------------------------------------------|-----------------------------|
-| L001 | _None at time of writing_                       | —                           |
-
----
-
-## 14. Revision History
-
-| Version | Date       | Author     | Description          |
-|---------|------------|------------|----------------------|
-| 0.1     | <YYYY-MM-DD> | <author> | Initial draft        |
+```
+Baud Rate = PCLK / (16 × USARTDIV)
 ```
 
+Where `USARTDIV` is the value programmed in the BRR register.
+
+| PCLK (MHz) | Target Baud Rate | BRR Value | Actual Rate  | Error |
+|------------|-----------------|-----------|-------------|-------|
+| 50         | 115,200          | 27.127    | 115,207     | 0.006%|
+| 50         | 1,000,000        | 3.125     | 1,000,000   | 0%    |
+
+### 3.5 DMA Mode
+
+When DMA mode is enabled (CTRL.DMA_EN = 1):
+- TX FIFO threshold asserts DMA request to DMA controller
+- RX FIFO threshold asserts DMA request to DMA controller
+- CPU is not involved in data movement
+
+### 3.6 Hardware Flow Control
+
+<If applicable: describe CTS/RTS or equivalent handshake signals and behavior.>
+> _TODO: Describe flow control mechanism or mark N/A._
+
+### 3.7 FIFO Operation
+
+| Parameter    | Value           |
+|--------------|----------------|
+| TX FIFO depth| <N> entries × <W>-bit |
+| RX FIFO depth| <N> entries × <W>-bit |
+| TX threshold | Programmable: 1/4, 1/2, 3/4 full |
+| RX threshold | Programmable: 1/4, 1/2, 3/4 full |
+
 ---
 
-### 3. Review and Refine
+## 4. Interrupts
 
-After generating the document, do a self-review pass:
+All interrupt flags are in the INT_STAT register. Each source has a corresponding enable bit in INT_EN. The combined interrupt output (`irq`) is asserted when any enabled flag is set.
 
-- [ ] Every section has real content or a clear `_TODO_` marker
-- [ ] All register fields have access types (RW, RO, WO, W1C, W1S)
-- [ ] Port widths and directions are consistent throughout
-- [ ] CDC section is complete (or explicitly states single clock domain)
-- [ ] Reset behavior is fully specified
-- [ ] No placeholder text left unflagged
+| Source | Flag Bit | Enable Bit | Trigger Condition | Type |
+|--------|----------|-----------|-------------------|------|
+| TX Empty | INT_STAT[0] | INT_EN[0] | TX FIFO below threshold | Level |
+| RX Not Empty | INT_STAT[1] | INT_EN[1] | RX FIFO above threshold | Level |
+| TX Complete | INT_STAT[2] | INT_EN[2] | Last byte shifted out | Level |
+| Overrun Error | INT_STAT[3] | INT_EN[3] | RX overflow | Level |
+| Framing Error | INT_STAT[4] | INT_EN[4] | Invalid stop bit | Level |
+| Parity Error | INT_STAT[5] | INT_EN[5] | Parity mismatch | Level |
 
-If the user provided enough detail to fill a section fully, fill it. Don't leave `_TODO_`
-where the user already gave you the information.
+**Clearing interrupts:** Write 1 to the corresponding INT_STAT bit (W1C).
+
+**Interrupt priority:** All sources share a single `irq` output line. The host interrupt controller (NVIC/GIC) assigns priority.
+
+---
+
+## 5. Low-Power Modes
+
+| Mode | IP State | Wake-up Capable | Notes |
+|------|----------|-----------------|-------|
+| Sleep | Fully operational | Yes — any enabled interrupt | CPU halted, peripheral clocks active |
+| Stop | Clock gated, state retained | Yes — if LP_WAKEUP_EN = 1 | RX pin monitored by always-on logic |
+| Standby | Power removed, state lost | No | Registers reset on exit |
+
+### 5.1 Wake-up from Stop Mode
+
+If `CTRL.LP_WAKEUP_EN` is set, the IP can detect a start bit on the RX pin and assert a wake-up event to the power management unit, restoring clocks before the first character is received.
+
+> _TODO: Confirm wake-up latency and whether a start/stop bit is missed during clock restoration._
+
+---
+
+## 6. Register Description
+
+Base address: `0x0000_0000` (relative to IP base, assign SoC base at integration time)
+
+### 6.1 CTRL — Control Register
+
+**Offset:** `0x00` | **Access:** RW | **Reset:** `0x0000_0000`
+
+| Bits  | Field       | Access | Reset | Description                                 |
+|-------|-------------|--------|-------|---------------------------------------------|
+| 31:16 | RESERVED    | —      | 0     | Reserved, must write 0                      |
+| 15:12 | BAUD_DIV    | RW     | 0x0   | Baud rate integer divider (see Section 3.4) |
+| 11:8  | MODE        | RW     | 0x0   | 0=UART, 1=Sync, 2=Half-duplex, 3=Loopback  |
+| 7     | LP_WAKEUP_EN| RW     | 0     | 1 = Enable wake-up from Stop mode           |
+| 6     | DMA_EN      | RW     | 0     | 1 = Enable DMA mode for TX and RX           |
+| 5     | FLOW_CTRL   | RW     | 0     | 1 = Enable CTS/RTS hardware flow control    |
+| 4     | PARITY_EN   | RW     | 0     | 1 = Enable parity                           |
+| 3     | PARITY_SEL  | RW     | 0     | 0 = Even, 1 = Odd                           |
+| 2     | WORD_LEN    | RW     | 0     | 0 = 8-bit, 1 = 9-bit word length            |
+| 1     | TX_EN       | RW     | 0     | 1 = Transmitter enable                      |
+| 0     | RX_EN       | RW     | 0     | 1 = Receiver enable                         |
+
+### 6.2 STATUS — Status Register
+
+**Offset:** `0x04` | **Access:** RO | **Reset:** `0x0000_0040`
+
+| Bits  | Field       | Access | Reset | Description                                  |
+|-------|-------------|--------|-------|----------------------------------------------|
+| 31:8  | RESERVED    | —      | 0     | Reserved                                     |
+| 7     | TX_FULL     | RO     | 0     | 1 = TX FIFO full                             |
+| 6     | TX_EMPTY    | RO     | 1     | 1 = TX FIFO empty (default after reset)      |
+| 5     | RX_FULL     | RO     | 0     | 1 = RX FIFO full                             |
+| 4     | RX_EMPTY    | RO     | 0     | 1 = RX FIFO empty                            |
+| 3     | TX_BUSY     | RO     | 0     | 1 = Transmitter actively shifting data       |
+| 2     | OVERRUN     | RO     | 0     | 1 = RX FIFO overrun occurred                 |
+| 1     | FRAMING_ERR | RO     | 0     | 1 = Framing error on last received character |
+| 0     | PARITY_ERR  | RO     | 0     | 1 = Parity error on last received character  |
+
+### 6.3 INT_EN — Interrupt Enable Register
+
+**Offset:** `0x08` | **Access:** RW | **Reset:** `0x0000_0000`
+
+| Bits  | Field       | Access | Reset | Description                       |
+|-------|-------------|--------|-------|-----------------------------------|
+| 31:6  | RESERVED    | —      | 0     | Reserved                          |
+| 5     | PARITY_ERR_EN | RW   | 0     | 1 = Enable parity error interrupt |
+| 4     | FRAME_ERR_EN| RW     | 0     | 1 = Enable framing error interrupt|
+| 3     | OVERRUN_EN  | RW     | 0     | 1 = Enable overrun interrupt      |
+| 2     | TX_CPLT_EN  | RW     | 0     | 1 = Enable TX complete interrupt  |
+| 1     | RX_NE_EN    | RW     | 0     | 1 = Enable RX not empty interrupt |
+| 0     | TX_E_EN     | RW     | 0     | 1 = Enable TX empty interrupt     |
+
+### 6.4 INT_STAT — Interrupt Status Register
+
+**Offset:** `0x0C` | **Access:** W1C | **Reset:** `0x0000_0000`
+
+| Bits  | Field       | Access | Reset | Description                              |
+|-------|-------------|--------|-------|------------------------------------------|
+| 31:6  | RESERVED    | —      | 0     | Reserved                                 |
+| 5     | PARITY_ERR  | W1C    | 0     | Parity error — write 1 to clear          |
+| 4     | FRAME_ERR   | W1C    | 0     | Framing error — write 1 to clear         |
+| 3     | OVERRUN     | W1C    | 0     | RX overrun — write 1 to clear            |
+| 2     | TX_CPLT     | W1C    | 0     | TX shift register empty — write 1 to clear |
+| 1     | RX_NE       | W1C    | 0     | RX FIFO not empty — write 1 to clear     |
+| 0     | TX_E        | W1C    | 0     | TX FIFO empty — write 1 to clear         |
+
+### 6.5 TX_DATA — Transmit Data Register
+
+**Offset:** `0x10` | **Access:** WO | **Reset:** `0x0000_0000`
+
+| Bits  | Field  | Access | Reset | Description                    |
+|-------|--------|--------|-------|--------------------------------|
+| 31:9  | RESERVED | —    | 0     | Reserved                       |
+| 8:0   | TXD    | WO     | 0     | Write to push data into TX FIFO (bits [7:0] for 8-bit mode, [8:0] for 9-bit) |
+
+### 6.6 RX_DATA — Receive Data Register
+
+**Offset:** `0x14` | **Access:** RO | **Reset:** `0x0000_0000`
+
+| Bits  | Field  | Access | Reset | Description                          |
+|-------|--------|--------|-------|--------------------------------------|
+| 31:9  | RESERVED | —    | 0     | Reserved                             |
+| 8:0   | RXD    | RO     | 0     | Read to pop data from RX FIFO (8 or 9 bits) |
+
+### 6.7 BRR — Baud Rate Register
+
+**Offset:** `0x18` | **Access:** RW | **Reset:** `0x0000_0000`
+
+| Bits  | Field       | Access | Reset | Description                                  |
+|-------|-------------|--------|-------|----------------------------------------------|
+| 31:16 | RESERVED    | —      | 0     | Reserved                                     |
+| 15:4  | BRR_INT     | RW     | 0     | Integer part of USARTDIV                     |
+| 3:0   | BRR_FRAC    | RW     | 0     | Fractional part of USARTDIV (÷16)            |
+
+### 6.8 Register Map
+
+| Offset | Register  | Access | Reset Value   | Description             |
+|--------|-----------|--------|---------------|-------------------------|
+| `0x00` | CTRL      | RW     | `0x0000_0000` | Control                 |
+| `0x04` | STATUS    | RO     | `0x0000_0040` | Status                  |
+| `0x08` | INT_EN    | RW     | `0x0000_0000` | Interrupt enable        |
+| `0x0C` | INT_STAT  | W1C    | `0x0000_0000` | Interrupt status        |
+| `0x10` | TX_DATA   | WO     | `0x0000_0000` | Transmit data           |
+| `0x14` | RX_DATA   | RO     | `0x0000_0000` | Receive data            |
+| `0x18` | BRR       | RW     | `0x0000_0000` | Baud rate               |
+| `0x1C`–`0xFF` | — | —    | —             | Reserved                |
+
+---
+
+## 7. Interface Description
+
+### 7.1 Port List
+
+| Port Name   | Dir    | Width | Clock Domain | Description                         |
+|-------------|--------|-------|--------------|-------------------------------------|
+| `clk`       | input  | 1     | —            | Primary clock (PCLK)                |
+| `rst_n`     | input  | 1     | —            | Active-low synchronous reset        |
+| `psel`      | input  | 1     | clk          | APB select                          |
+| `penable`   | input  | 1     | clk          | APB enable phase                    |
+| `pwrite`    | input  | 1     | clk          | APB write strobe                    |
+| `paddr`     | input  | 8     | clk          | APB address [7:0]                   |
+| `pwdata`    | input  | 32    | clk          | APB write data                      |
+| `prdata`    | output | 32    | clk          | APB read data                       |
+| `pready`    | output | 1     | clk          | APB ready (can insert wait states)  |
+| `pslverr`   | output | 1     | clk          | APB error response                  |
+| `tx`        | output | 1     | clk          | Serial transmit output              |
+| `rx`        | input  | 1     | clk          | Serial receive input                |
+| `cts_n`     | input  | 1     | clk          | CTS flow control (active low)       |
+| `rts_n`     | output | 1     | clk          | RTS flow control (active low)       |
+| `dma_tx_req`| output | 1     | clk          | DMA TX request                      |
+| `dma_rx_req`| output | 1     | clk          | DMA RX request                      |
+| `irq`       | output | 1     | clk          | Interrupt (level, active-high)      |
+
+> _TODO: Add any IP-specific ports not listed above._
+
+### 7.2 Interface Protocols
+
+| Interface | Protocol | Version | Data Width | Notes               |
+|-----------|----------|---------|-----------|---------------------|
+| Config    | APB3     | v2.0    | 32-bit    | Slave               |
+| DMA       | Sideband | —       | 1-bit req | TX and RX channels  |
+
+---
+
+## 8. Clocking
+
+| Clock  | Freq (max) | Source     | Description                          |
+|--------|-----------|-----------|--------------------------------------|
+| `clk`  | 500 MHz    | PCLK      | All synchronous logic                |
+
+### 8.1 Clock Enable / Gating
+
+The IP clock is gated by the SoC clock controller when the IP is idle and no interrupt is pending. Clock gating is transparent to software — re-enable by any register access.
+
+### 8.2 Clock Domain Crossings
+
+> _TODO: List CDCs or state "single clock domain — no CDCs"._
+
+---
+
+## 9. Reset
+
+| Signal  | Polarity   | Type        | Scope   |
+|---------|-----------|-------------|---------|
+| `rst_n` | Active low | Synchronous | Full IP |
+
+**On reset:**
+- All registers return to reset values (Section 6.8)
+- TX and RX FIFOs flushed
+- All outputs driven to inactive state
+- `tx` output held high (idle/mark state)
+- Minimum reset assertion: **2 clock cycles**
+
+---
+
+## 10. Timing Requirements
+
+| Parameter           | Min  | Typ | Max  | Unit | Conditions            |
+|--------------------|------|-----|------|------|-----------------------|
+| Clock period        | 2.0  | —   | —    | ns   | 500 MHz max           |
+| Input setup (rx/cts)| 0.2  | —   | —    | ns   | To clk rising edge    |
+| Input hold (rx/cts) | 0.1  | —   | —    | ns   | From clk rising edge  |
+| Output valid (tx)   | —    | —   | 1.5  | ns   | From clk rising edge  |
+| Reset pulse width   | 4.0  | —   | —    | ns   | Min 2 cycles @ 500MHz |
+
+> _TODO: Populate with actual STA results._
+
+---
+
+## 11. Verification Plan
+
+### 11.1 Testbench Architecture
+
+| Component       | Type          | Description                             |
+|-----------------|---------------|-----------------------------------------|
+| APB VIP         | UVM Agent     | Drive register accesses                 |
+| Serial BFM      | UVM Agent     | Drive/monitor TX/RX serial data         |
+| Reference Model | SystemVerilog | Golden model for output prediction      |
+| Scoreboard      | UVM           | Compare DUT vs reference                |
+| Coverage        | UVM           | Functional and code coverage            |
+
+### 11.2 Test Plan
+
+| Test Name           | Category   | Description                                       |
+|---------------------|-----------|---------------------------------------------------|
+| `tc_reset`          | Basic      | Reset values, register accessibility             |
+| `tc_reg_rw`         | Register   | All RW fields, reserved bits ignore writes       |
+| `tc_tx_basic`       | Functional | TX in 8-bit UART mode                            |
+| `tc_rx_basic`       | Functional | RX in 8-bit UART mode                            |
+| `tc_baud_rates`     | Functional | Multiple baud rates, accuracy check              |
+| `tc_fifo_full`      | Functional | TX/RX FIFO fill and drain                        |
+| `tc_dma_mode`       | Functional | DMA TX and RX channels                           |
+| `tc_flow_ctrl`      | Functional | CTS/RTS hardware flow control                    |
+| `tc_all_modes`      | Functional | UART / Sync / Half-duplex / Loopback modes       |
+| `tc_interrupts`     | Interrupt  | All interrupt sources, enable/mask, W1C          |
+| `tc_lp_wakeup`      | Power      | Wake from Stop mode via RX start bit             |
+| `tc_overrun`        | Error      | RX overrun, framing error, parity error          |
+| `tc_reset_mid_tx`   | Corner     | Reset asserted during active transmit            |
+| `tc_stress_back2back`| Stress    | Back-to-back frames, no gaps                     |
+
+### 11.3 Coverage Goals
+
+| Coverage Type        | Target |
+|----------------------|--------|
+| Line / branch / toggle | 100% |
+| FSM state coverage   | 100%   |
+| FSM transition       | 100%   |
+| Functional           | 95%    |
+| Register field toggle| 100%   |
+| Interrupt cross      | 100%   |
+
+### 11.4 Static Checks
+
+- [ ] Lint (Spyglass / Verilator): zero errors, zero warnings
+- [ ] CDC (Synopsys SpyGlass CDC): clean
+- [ ] Formal: reset correctness, interrupt generation properties
+
+---
+
+## 12. Known Limitations
+
+| ID   | Description          | Workaround |
+|------|----------------------|------------|
+| L001 | _None at this time_  | —          |
+
+---
+
+## 13. Revision History
+
+| Version | Date         | Author     | Description       |
+|---------|-------------|------------|-------------------|
+| 0.1     | <YYYY-MM-DD> | <author>   | Initial draft     |
+````
+
+---
+
+### 3. Self-Review Checklist
+
+After generating, verify:
+
+- [ ] Section 4 (Interrupts) is a standalone top-level section — not buried in functional description
+- [ ] Section 5 (Low-power modes) exists and covers Sleep/Stop/Standby behavior explicitly
+- [ ] Section 6.8 has a register map summary table (all registers in one place)
+- [ ] Every register field has an access type: RW, RO, WO, W1C, W1S, or RC
+- [ ] Reset values are specified for every register
+- [ ] No placeholder text left unflagged where user provided the information
+- [ ] Introduction mentions which device variants the IP is in
+- [ ] Functional description is subdivided by operating mode (not one giant paragraph)
 
 ### 4. Save the File
 
-Write the document to:
+```bash
+mkdir -p ./docs/<ip-name>
+# Write via Write tool
 ```
-./docs/<ip-name>/<ip-name>_spec.md
-```
 
-If `./docs/<ip-name>/` doesn't exist, create it. Confirm the file path to the user.
+Confirm the saved path to the user.
 
-### 5. Offer to Expand Any Section
+### 5. Offer Enhancements
 
-After saving, ask if the user wants to:
+After saving, offer to:
 - Add more registers
-- Expand the functional description
-- Add waveform diagrams (timing diagrams in ASCII/Wavedrom)
-- Generate a register header file (C/SystemVerilog) from the register map
+- Expand a functional description sub-section
+- Add timing waveform diagrams (Wavedrom JSON format)
+- Generate a C header file from the register map
+- Generate a SystemVerilog register package
 
 ## Wrap up
 
 Tell the user:
-- Where the spec was saved
-- How many sections were fully populated vs marked TODO
-- What information would most improve the document
-- Suggest next steps: peer review, adding waveforms, generating RTL skeleton
+- Where the file was saved (`./docs/<ip-name>/<ip-name>_spec.md`)
+- How many sections are fully populated vs have `_TODO_` markers
+- Top 2–3 things that would most improve the document
+- Suggest next steps: design review, adding waveforms, RTL skeleton generation
